@@ -1,0 +1,12 @@
+/* Canvas-based JARVIS HUD Styles */
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  margin: 0 auto;
+  background: #000;
+}

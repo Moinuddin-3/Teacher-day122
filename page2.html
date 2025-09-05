@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy Teachers Day</title>
+  <style>
+    body {
+      margin: 0;
+      background: radial-gradient(circle at center, #001122 0%, #000000 100%);
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+      height: 100vh;
+    }
+
+    .main-content {
+      position: relative;
+      text-align: center;
+      z-index: 10;
+      padding: 20px;
+    }
+
+    .title {
+      color: #00ffff;
+      font-size: 48px;
+      text-shadow: 0 0 20px #00ffff, 0 0 40px #00cccc;
+      margin: 20px 0;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    .subtitle {
+      color: #ffaa00;
+      font-size: 24px;
+      text-shadow: 0 0 15px #ffaa00;
+      margin-bottom: 30px;
+    }
+
+    .message {
+      color: #ffffff;
+      font-size: 18px;
+      text-shadow: 0 0 10px #ffffff;
+      line-height: 1.8;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 20px #00ffff; }
+      to { text-shadow: 0 0 30px #00ffff, 0 0 50px #00cccc; }
+    }
+
+    /* Teacher Images */
+    .small-img, .top-left-img, .top-right-img, .bottom-left-img {
+      width: 300px;
+      height: 300px;
+      position: fixed;
+      z-index: 5;
+      border: 2px solid #00ffff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00ffff;
+      object-fit: cover;
+    }
+
+    .top-left-img {
+      top: 20px;
+      left: 20px;
+    }
+
+    .top-right-img {
+      top: 20px;
+      right: 20px;
+    }
+
+    .bottom-left-img {
+      bottom: 60px; /* space for ticker */
+      left: 20px;
+      width: 280px;
+      height: 280px;
+    }
+
+    /* Footer */
+    .footer {
+      position: fixed;
+      bottom: 35px;
+      right: 10px;
+      font-size: 18px;
+      color: #00ffcc;
+      text-shadow: 0 0 10px #00ffcc, 0 0 20px #00cccc;
+      z-index: 20;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #00ffff;
+      text-align: right;
+    }
+
+    /* Scrolling Banner */
+    .ticker {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 250, 200, 0.2);
+      color: #00ffff;
+      font-size: 20px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      border-top: 2px solid #00ffff;
+      z-index: 25;
+    }
+
+    .ticker span {
+      display: inline-block;
+      padding-left: 100%;
+      animation: scrollText 20s linear infinite;
+    }
+
+    @keyframes scrollText {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Globe -->
+  <canvas id="hud"></canvas>
+
+  <!-- Text Content -->
+  <div class="main-content">
+    <h1 class="title">HAPPY TEACHERS DAY</h1>
+    <h2 class="subtitle">Celebrating Our Educators</h2>
+    <div class="message">
+      <p id="welcomeMessage">Thank you to all the amazing teachers who inspire, guide, and shape the future.</p>
+      <p>➤ Dear Teacher, your wisdom, guidance, and support have been my greatest strength. Wishing you a very Happy Teachers’ Day</p>
+      <p>➤ You are the reason I learned to dream big. Wishing you a beautiful Teachers’ Day.</p>
+      <p>➤ You taught me lessons that no textbook could cover – lessons of kindness, patience, and humility.</p>
+      <p>➤ You don’t just teach subjects, you teach life. Thank you for your endless efforts and kindness. Happy Teachers’ Day!</p>
+      <p>➤ “Like a well-written program, your guidance prevents errors and helps us debug our mistakes. Wishing you a Happy Teachers’ Day!”</p>
+    </div>
+  </div>
+
+  <!-- Teacher Photos -->
+  <img class="top-left-img" src="https://i.postimg.cc/3xX2w5wj/sir5.jpg" alt="Teacher guiding students" />
+  <img class="bottom-left-img" src="https://i.postimg.cc/FH4DpxdZ/sir6.jpg" alt="Teacher in classroom" />
+
+  <!-- Footer -->
+  <div class="footer">
+    Thank you sir <br>
+    Name: MD.Moinuddin <br>
+    Roll No: 160123749046
+  </div>
+
+  <!-- Scrolling Banner -->
+  <div class="ticker">
+    <span>Happy Teachers' Day! Thank you for guiding and inspiring us. 🎉</span>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("hud");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let cx = canvas.width / 2;
+    let cy = canvas.height / 2;
+
+    const globeRadius = 150;
+    const nodeCount = 30;
+    const connectionDistance = 180;
+
+    class NetworkNode {
+      constructor() {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = 2 * Math.PI * Math.random();
+
+        this.x = globeRadius * Math.sin(phi) * Math.cos(theta);
+        this.y = globeRadius * Math.sin(phi) * Math.sin(theta);
+        this.z = globeRadius * Math.cos(phi);
+
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.vz = (Math.random() - 0.5) * 0.3;
+
+        this.pulsePhase = Math.random() * Math.PI * 2;
+        this.pulseSpeed = 0.01 + Math.random() * 0.02;
+        this.size = 2 + Math.random() * 3;
+        this.color = Math.random() > 0.7 ? '#ffaa00' : '#00ffff';
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.z += this.vz;
+
+        const distance = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        if (distance > globeRadius) {
+          this.x = (this.x / distance) * globeRadius;
+          this.y = (this.y / distance) * globeRadius;
+          this.z = (this.z / distance) * globeRadius;
+        }
+
+        this.pulsePhase += this.pulseSpeed;
+      }
+
+      get2DPosition() {
+        const scale = 200 / (200 + this.z);
+        return {
+          x: cx + this.x * scale,
+          y: cy + this.y * scale,
+          z: this.z
+        };
+      }
+    }
+
+    const nodes = [];
+    const connections = [];
+
+    for (let i = 0; i < nodeCount; i++) {
+      nodes.push(new NetworkNode());
+    }
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dz = nodes[i].z - nodes[j].z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (distance < connectionDistance) {
+          connections.push([i, j]);
+        }
+      }
+    }
+
+    function drawConnections() {
+      ctx.save();
+      connections.forEach(([i, j]) => {
+        const pos1 = nodes[i].get2DPosition();
+        const pos2 = nodes[j].get2DPosition();
+
+        if (pos1.z > -100 && pos2.z > -100) {
+          const alpha = Math.min(pos1.z, pos2.z) / 200;
+          ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.2})`;
+          ctx.beginPath();
+          ctx.moveTo(pos1.x, pos1.y);
+          ctx.lineTo(pos2.x, pos2.y);
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+    }
+
+    function drawNodes() {
+      ctx.save();
+      nodes.forEach(node => {
+        const pos = node.get2DPosition();
+        if (pos.z > -100) {
+          const alpha = pos.z / 200;
+          const pulseSize = node.size + Math.sin(node.pulsePhase) * 1;
+
+          ctx.fillStyle = node.color;
+          ctx.shadowColor = node.color;
+          ctx.shadowBlur = 5 * alpha;
+          ctx.globalAlpha = alpha * 0.7;
+
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, pulseSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      ctx.restore();
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      nodes.forEach(node => node.update());
+      drawConnections();
+      drawNodes();
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      cx = canvas.width / 2;
+      cy = canvas.height / 2;
+    });
+
+    // Personalized welcome message
+    const welcomeMessage = document.getElementById('welcomeMessage');
+    const userName = localStorage.getItem('userName');
+    if (userName) {
+      welcomeMessage.textContent = `Welcome ${userName}! Thank you to all the amazing teachers who inspire, guide, and shape the future.`;
+    }
+  </script>
+</body>
+</html>

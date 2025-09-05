@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Globe - Network Sphere</title>
+  <style>
+    body {
+      margin: 0;
+      background: radial-gradient(circle at center, #001122 0%, #000000 100%);
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: transparent;
+    }
+    .name-input {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 300;
+    }
+    .name-input input {
+      background: rgba(0,0,0,0.8);
+      color: #00ffff;
+      border: 2px solid #00ffff;
+      padding: 15px 25px;
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00ffff;
+      outline: none;
+      width: 300px;
+    }
+    .name-input input::placeholder {
+      color: #00ffff;
+      opacity: 0.7;
+    }
+    .small-img {
+      width: 200px;
+      height: 200px;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 200;
+      border: 2px solid #00ffff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00ffff;
+    }
+    .date {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      color: #00ffff;
+      font-size: 48px;
+      text-shadow: 0 0 20px #00ffff;
+      z-index: 200;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+    .bottom-img {
+      width: 200px;
+      height: 200px;
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 200;
+      border: 2px solid #00ffff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00ffff;
+    }
+    .bottom-right-img {
+      width: 200px;
+      height: 200px;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 200;
+      border: 2px solid #00ffff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00ffff;
+    }
+    .nav-button {
+      position: fixed;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: #00ffff;
+      border: 2px solid #00ffff;
+      padding: 15px 30px;
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #00ffff;
+      cursor: pointer;
+      text-decoration: none;
+      z-index: 300;
+    }
+    .nav-button:hover {
+      background: rgba(0,255,255,0.2);
+      box-shadow: 0 0 30px #00ffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="name-input">
+    <input type="text" id="userName" placeholder="Enter your name" />
+  </div>
+
+  <div class="date">05/09/2025</div>
+  <img class="small-img" src="https://i.postimg.cc/tR3xH2Qx/CBIT-day.png" alt="Small Image" />
+  <img class="bottom-img" src="https://i.postimg.cc/8zjBR9s6/vaseflower.avif" alt="Vase Flower" />
+  <img class="bottom-right-img" src="https://i.postimg.cc/8zjBR9s6/vaseflower.avif" alt="Bottom Right Flower" />
+  
+
+  <canvas id="hud"></canvas>
+
+  <script>
+    const canvas = document.getElementById("hud");
+    const ctx = canvas.getContext("2d");
+    const userNameInput = document.getElementById("userName");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    // 3D Globe parameters
+    const globeRadius = 150;
+    const nodeCount = 50;
+    const connectionDistance = 200;
+
+    // Node class for network points
+    class NetworkNode {
+      constructor() {
+        // Generate random point on sphere surface
+        const phi = Math.acos(2 * Math.random() - 1);
+        const theta = 2 * Math.PI * Math.random();
+        
+        this.x = globeRadius * Math.sin(phi) * Math.cos(theta);
+        this.y = globeRadius * Math.sin(phi) * Math.sin(theta);
+        this.z = globeRadius * Math.cos(phi);
+        
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.vz = (Math.random() - 0.5) * 0.5;
+        
+        this.connections = [];
+        this.pulsePhase = Math.random() * Math.PI * 2;
+        this.pulseSpeed = 0.02 + Math.random() * 0.03;
+        this.size = 2 + Math.random() * 3;
+        this.color = Math.random() > 0.7 ? '#ffaa00' : '#00ffff';
+      }
+
+      update() {
+        // Update position
+        this.x += this.vx;
+        this.y += this.vy;
+        this.z += this.vz;
+        
+        // Keep nodes on sphere surface
+        const distance = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        if (distance > globeRadius) {
+          this.x = (this.x / distance) * globeRadius;
+          this.y = (this.y / distance) * globeRadius;
+          this.z = (this.z / distance) * globeRadius;
+        }
+        
+        this.pulsePhase += this.pulseSpeed;
+      }
+
+      get2DPosition() {
+        // Project 3D coordinates to 2D screen
+        const scale = 200 / (200 + this.z);
+        return {
+          x: cx + this.x * scale,
+          y: cy + this.y * scale,
+          z: this.z
+        };
+      }
+    }
+
+    // Data stream particle
+    class DataParticle {
+      constructor(startNode, endNode) {
+        this.startNode = startNode;
+        this.endNode = endNode;
+        this.progress = 0;
+        this.speed = 0.01 + Math.random() * 0.02;
+        this.size = 1 + Math.random() * 2;
+        this.color = Math.random() > 0.5 ? '#00ffff' : '#ffaa00';
+      }
+
+      update() {
+        this.progress += this.speed;
+        if (this.progress >= 1) {
+          this.progress = 0;
+        }
+      }
+
+      getPosition() {
+        const start = this.startNode.get2DPosition();
+        const end = this.endNode.get2DPosition();
+        
+        return {
+          x: start.x + (end.x - start.x) * this.progress,
+          y: start.y + (end.y - start.y) * this.progress
+        };
+      }
+    }
+
+    // Initialize network
+    const nodes = [];
+    const connections = [];
+    const dataParticles = [];
+    let rotationX = 0;
+    let rotationY = 0;
+    let time = 0;
+
+    // Create network nodes
+    for (let i = 0; i < nodeCount; i++) {
+      nodes.push(new NetworkNode());
+    }
+
+    // Create connections between nearby nodes
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dz = nodes[i].z - nodes[j].z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        if (distance < connectionDistance) {
+          connections.push([i, j]);
+          nodes[i].connections.push(j);
+          nodes[j].connections.push(i);
+        }
+      }
+    }
+
+    // Create data particles
+    for (let i = 0; i < 20; i++) {
+      const startNode = nodes[Math.floor(Math.random() * nodes.length)];
+      const endNode = startNode.connections.length > 0 ? 
+        nodes[startNode.connections[Math.floor(Math.random() * startNode.connections.length)]] : 
+        nodes[Math.floor(Math.random() * nodes.length)];
+      dataParticles.push(new DataParticle(startNode, endNode));
+    }
+
+    // Draw background grid
+    function drawBackground() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      
+      // Grid pattern
+      for (let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      
+      // Corner text
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.font = '10px Courier New';
+      ctx.fillText('DIGITAL GLOBE', 20, 20);
+      ctx.fillText('NETWORK SPHERE', canvas.width - 120, 20);
+      ctx.fillText('v2.0', 20, canvas.height - 20);
+      ctx.fillText('ONLINE', canvas.width - 60, canvas.height - 20);
+      
+      ctx.restore();
+    }
+
+    // Draw the 3D globe wireframe
+    function drawGlobe() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+      ctx.lineWidth = 1;
+      
+      // Draw latitude lines
+      for (let lat = 0; lat < Math.PI; lat += Math.PI / 8) {
+        ctx.beginPath();
+        for (let lon = 0; lon <= Math.PI * 2; lon += Math.PI / 16) {
+          const x = globeRadius * Math.sin(lat) * Math.cos(lon);
+          const y = globeRadius * Math.sin(lat) * Math.sin(lon);
+          const z = globeRadius * Math.cos(lat);
+          
+          const scale = 200 / (200 + z);
+          const screenX = cx + x * scale;
+          const screenY = cy + y * scale;
+          
+          if (lon === 0) {
+            ctx.moveTo(screenX, screenY);
+          } else {
+            ctx.lineTo(screenX, screenY);
+          }
+        }
+        ctx.stroke();
+      }
+      
+      // Draw longitude lines
+      for (let lon = 0; lon < Math.PI * 2; lon += Math.PI / 8) {
+        ctx.beginPath();
+        for (let lat = 0; lat <= Math.PI; lat += Math.PI / 16) {
+          const x = globeRadius * Math.sin(lat) * Math.cos(lon);
+          const y = globeRadius * Math.sin(lat) * Math.sin(lon);
+          const z = globeRadius * Math.cos(lat);
+          
+          const scale = 200 / (200 + z);
+          const screenX = cx + x * scale;
+          const screenY = cy + y * scale;
+          
+          if (lat === 0) {
+            ctx.moveTo(screenX, screenY);
+          } else {
+            ctx.lineTo(screenX, screenY);
+          }
+        }
+        ctx.stroke();
+      }
+      
+      ctx.restore();
+    }
+
+    // Draw network connections
+    function drawConnections() {
+      ctx.save();
+      
+      connections.forEach(([i, j]) => {
+        const pos1 = nodes[i].get2DPosition();
+        const pos2 = nodes[j].get2DPosition();
+        
+        // Only draw connections that are visible (z > 0)
+        if (pos1.z > -100 && pos2.z > -100) {
+          const alpha = Math.min(pos1.z, pos2.z) / 200;
+          ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.3})`;
+          ctx.lineWidth = 1;
+          
+          ctx.beginPath();
+          ctx.moveTo(pos1.x, pos1.y);
+          ctx.lineTo(pos2.x, pos2.y);
+          ctx.stroke();
+        }
+      });
+      
+      ctx.restore();
+    }
+
+    // Draw network nodes
+    function drawNodes() {
+      ctx.save();
+      
+      nodes.forEach(node => {
+        const pos = node.get2DPosition();
+        
+        if (pos.z > -100) { // Only draw visible nodes
+          const alpha = pos.z / 200;
+          const pulseSize = node.size + Math.sin(node.pulsePhase) * 2;
+          
+          ctx.fillStyle = node.color;
+          ctx.shadowColor = node.color;
+          ctx.shadowBlur = 10 * alpha;
+          ctx.globalAlpha = alpha;
+          
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, pulseSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      
+      ctx.restore();
+    }
+
+    // Draw data particles
+    function drawDataParticles() {
+      ctx.save();
+      
+      dataParticles.forEach(particle => {
+        const pos = particle.getPosition();
+        
+        ctx.fillStyle = particle.color;
+        ctx.shadowColor = particle.color;
+        ctx.shadowBlur = 8;
+        
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      
+      ctx.restore();
+    }
+
+    // Main animation loop
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update time
+      time += 0.01;
+      rotationX += 0.005;
+      rotationY += 0.003;
+
+      // Update nodes
+      nodes.forEach(node => node.update());
+
+      // Update data particles
+      dataParticles.forEach(particle => particle.update());
+
+      // Draw everything
+      drawBackground();
+      drawGlobe();
+      drawConnections();
+      drawNodes();
+      drawDataParticles();
+
+
+      requestAnimationFrame(animate);
+    }
+
+    // Start the animation
+    animate();
+
+    // Handle name input - redirect to page 2 when Enter is pressed
+    userNameInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        const name = userNameInput.value.trim();
+        if (name) {
+          // Store the name in localStorage to use on page 2
+          localStorage.setItem('userName', name);
+          // Redirect to page 2
+          window.location.href = 'page2.html';
+        }
+      }
+    });
+
+    // Resize handler
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // Mouse interaction
+    let mouseX = 0;
+    let mouseY = 0;
+    
+    canvas.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      
+      // Update globe rotation based on mouse position
+      rotationY = (mouseX - cx) / 100;
+      rotationX = (mouseY - cy) / 100;
+    });
+
+    // Click to add new nodes
+    canvas.addEventListener('click', (e) => {
+      // Add a new node at random position
+      const newNode = new NetworkNode();
+      nodes.push(newNode);
+      
+      // Create connections with nearby nodes
+      for (let i = 0; i < nodes.length - 1; i++) {
+        const dx = newNode.x - nodes[i].x;
+        const dy = newNode.y - nodes[i].y;
+        const dz = newNode.z - nodes[i].z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        if (distance < connectionDistance) {
+          connections.push([nodes.length - 1, i]);
+          newNode.connections.push(i);
+          nodes[i].connections.push(nodes.length - 1);
+        }
+      }
+    });
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      switch(e.key.toLowerCase()) {
+        case 'r':
+          // Reset globe
+          nodes.length = 0;
+          connections.length = 0;
+          dataParticles.length = 0;
+          
+          // Recreate network
+          for (let i = 0; i < nodeCount; i++) {
+            nodes.push(new NetworkNode());
+          }
+          
+          for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+              const dx = nodes[i].x - nodes[j].x;
+              const dy = nodes[i].y - nodes[j].y;
+              const dz = nodes[i].z - nodes[j].z;
+              const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+              
+              if (distance < connectionDistance) {
+                connections.push([i, j]);
+                nodes[i].connections.push(j);
+                nodes[j].connections.push(i);
+              }
+            }
+          }
+          
+          for (let i = 0; i < 20; i++) {
+            const startNode = nodes[Math.floor(Math.random() * nodes.length)];
+            const endNode = startNode.connections.length > 0 ? 
+              nodes[startNode.connections[Math.floor(Math.random() * startNode.connections.length)]] : 
+              nodes[Math.floor(Math.random() * nodes.length)];
+            dataParticles.push(new DataParticle(startNode, endNode));
+          }
+          break;
+          
+        case ' ':
+          // Pause/resume animation
+          e.preventDefault();
+          if (window.animationPaused) {
+            animate();
+            window.animationPaused = false;
+          } else {
+            window.animationPaused = true;
+          }
+          break;
+      }
+    });
+
+    // Console welcome
+    console.log(`
+    ╔══════════════════════════════════════╗
+    ║                                      ║
+    ║         Network Sphere               ║
+    ║                                      ║
+    ║  Controls:                           ║
+    ║  Mouse - Rotate Globe                ║
+    ║  Click - Add Network Node            ║
+    ║  R - Reset Network                   ║
+    ║  Space - Pause/Resume                ║
+    ║                                      ║
+    ║  Features:                           ║
+    ║  • 3D Globe Wireframe                ║
+    ║  • Dynamic Network Nodes             ║
+    ║  • Flowing Data Particles            ║
+    ║  • Real-time Connections             ║
+    ║  • Interactive Controls              ║
+    ╚══════════════════════════════════════╝
+    `);
+  </script>
+</body>
+</html>
